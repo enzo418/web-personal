@@ -1,0 +1,12 @@
+.project .tech-stack-container img {
+    border-radius: 5px;
+}
+
+.project-title {
+    text-align: center;
+}
+
+.tech-stack-container{
+    display: flex;
+    justify-content: space-evenly;
+}
