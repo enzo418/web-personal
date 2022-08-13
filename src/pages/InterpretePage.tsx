@@ -2,6 +2,7 @@ import { Box, Button, Stack, styled } from '@mui/material';
 import React from 'react';
 import * as monaco from 'monaco-editor';
 import '../styles/InterpretePage.css';
+import SendIcon from '@mui/icons-material/Send';
 
 interface Shell {
     // eslint-disable-next-line no-unused-vars
@@ -60,24 +61,61 @@ class ShellElement implements Shell {
     }
 }
 
+interface IInterpreteError {
+    line: number;
+    column: number;
+    length: number;
+    message: string;
+}
+
+type onInterpreteErrorCabllack = (error: IInterpreteError) => any;
+
 class Interprete {
     lastPrintBeforeWrite = '';
     shell: Shell;
+    errorCallbacks: onInterpreteErrorCabllack[];
 
     constructor(shell: Shell) {
         this.shell = shell;
+        this.errorCallbacks = [];
     }
 
     async writeMessageReadValue(message: string) {
         this.shell.write(message, '');
         return new Promise(async (resolve, rej) => {
             var value = await this.shell.readValue();
-            resolve(value);
+            setTimeout(async () => {
+                resolve(parseFloat(value));
+            }, 100);
         });
     }
 
     writeMessage(message: string) {
         this.shell.write(message);
+    }
+
+    subscribeToErrors(callback: onInterpreteErrorCabllack) {
+        this.errorCallbacks.push(callback);
+    }
+
+    addErrorMarker(
+        line: number,
+        column: number,
+        length: number,
+        message: string,
+    ) {
+        const error: IInterpreteError = {
+            line,
+            column,
+            length,
+            message,
+        };
+
+        console.log({ error });
+
+        this.errorCallbacks.forEach(cb => {
+            cb(error);
+        });
     }
 }
 
@@ -90,19 +128,14 @@ declare module globalThis {
 
 interface IProps {}
 
-interface IState {
-    codeEditor: monaco.editor.IStandaloneCodeEditor;
-}
-
-let editorInitiated = false;
+interface IState {}
 
 export default class InterpretePage extends React.Component<IProps, IState> {
-    state = {
-        codeEditor: null as monaco.editor.IStandaloneCodeEditor, // ¿problem?
-    };
+    state = {};
 
     inputSourceElement: any;
     outputElement: any;
+    codeEditor: monaco.editor.IStandaloneCodeEditor;
 
     constructor(props: IProps) {
         super(props);
@@ -116,10 +149,19 @@ export default class InterpretePage extends React.Component<IProps, IState> {
             flexDirection: 'column',
         },
         [theme.breakpoints.up('md')]: {
-            flexDirection: 'column',
-        },
-        [theme.breakpoints.up('lg')]: {
             flexDirection: 'row',
+        },
+    }));
+
+    EditorContainer = styled('div')(({ theme }) => ({
+        padding: theme.spacing(1),
+        [theme.breakpoints.down('md')]: {
+            width: '95vw',
+            height: '70vh',
+        },
+        [theme.breakpoints.up('md')]: {
+            width: '70vw',
+            height: '95vh',
         },
     }));
 
@@ -129,9 +171,9 @@ export default class InterpretePage extends React.Component<IProps, IState> {
         );
 
         globalThis.interprete = interprete;
+        globalThis.interprete.subscribeToErrors(this.setError.bind(this));
 
-        if (!editorInitiated) {
-            editorInitiated = true; // don't use state here
+        if (!this.codeEditor) {
             var editor = monaco.editor.create(this.inputSourceElement.current, {
                 value: 'var n1, n2, ultimoDividendo, aux, resto, mcd, mc\n{\n\tleer("Ingrese el primer numero: ", n1)\n\tleer("Ingrese el segundo numero: ", n2)\n\n\tresto = n1 % n2\n\n\tultimoDividendo = n2\n\n\tmientras(resto <> 0){\t\n\t\taux = resto\t\n\n\t\tresto = ultimoDividendo % resto\n\n\t\tultimoDividendo = aux\n\t}\n\n\tmcd = ultimoDividendo\n\n\tmcm = (n1 * n2) / mcd\n\n\tescribir("MCM: ", mcm)\n}',
                 language: 'factorial',
@@ -141,15 +183,27 @@ export default class InterpretePage extends React.Component<IProps, IState> {
                 theme: 'factorial-theme',
             });
 
-            this.setState({ codeEditor: editor });
+            this.codeEditor = editor;
         }
+    }
+
+    setError(error: IInterpreteError) {
+        monaco.editor.setModelMarkers(this.codeEditor.getModel(), 'owner', [
+            {
+                startLineNumber: error.line,
+                endLineNumber: error.line,
+                startColumn: error.column,
+                endColumn: error.column + error.length,
+                message: error.message,
+                severity: monaco.MarkerSeverity.Error,
+            },
+        ]);
     }
 
     run() {
         this.outputElement.current.value = '';
-        globalThis.Module.Interprete.Interpretar(
-            this.state.codeEditor.getValue(),
-        );
+        globalThis.Module.Interprete.Interpretar(this.codeEditor.getValue());
+        monaco.editor.removeAllMarkers('owner');
     }
 
     render() {
@@ -164,22 +218,25 @@ export default class InterpretePage extends React.Component<IProps, IState> {
                     color: '#fff',
                     overflow: 'hidden',
                 }}>
-                <div className="editor-container">
+                <this.EditorContainer className="editor-container">
                     <div
                         ref={this.inputSourceElement}
                         style={{
-                            width: '100vw',
-                            height: '70vh',
+                            width: '100%',
+                            height: '100%',
                             border: '1px solid grey',
                         }}></div>
-                </div>
-                <div>
-                    <Button onClick={() => this.run()}>Run</Button>
+                </this.EditorContainer>
+                <div style={{ padding: '8px', width: '95vw', height: '100vh' }}>
                     <textarea
                         className="black-background"
-                        style={{ width: '100%' }}
+                        style={{ width: '100%', height: '85vh' }}
+                        readOnly={true}
                         rows={8}
                         ref={this.outputElement}></textarea>
+                    <Button onClick={() => this.run()} endIcon={<SendIcon />}>
+                        Run
+                    </Button>
                 </div>
             </this.Root>
         );
