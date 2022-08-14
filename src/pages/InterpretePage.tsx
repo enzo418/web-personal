@@ -14,6 +14,8 @@ import '../styles/InterpretePage.css';
 import SendIcon from '@mui/icons-material/Send';
 import SyntaxTree from '../components/SyntaxTree';
 import TabPanel from '../components/TabPanel';
+import InterpreteExamples from '../components/IntepreteExamples';
+import { Example } from '../data/InterpreteExamples';
 
 interface Shell {
     // eslint-disable-next-line no-unused-vars
@@ -195,6 +197,7 @@ interface IState {
     syntaxTree: string;
     tabSelected: number;
     running: boolean;
+    exampleSelected: Example;
 }
 
 const darkTheme = createTheme({
@@ -208,6 +211,7 @@ export default class InterpretePage extends React.Component<IProps, IState> {
         syntaxTree: '',
         tabSelected: 0,
         running: false,
+        exampleSelected: null as Example, // ¿?
     };
 
     inputSourceElement: any;
@@ -220,6 +224,7 @@ export default class InterpretePage extends React.Component<IProps, IState> {
         this.outputElement = React.createRef();
 
         this.handleTabChange = this.handleTabChange.bind(this);
+        this.handleExampleChange = this.handleExampleChange.bind(this);
     }
 
     Root = styled('div')(({ theme }) => ({
@@ -344,6 +349,10 @@ export default class InterpretePage extends React.Component<IProps, IState> {
         this.setState({ tabSelected: newValue });
     }
 
+    handleExampleChange(example: Example) {
+        this.setState({ exampleSelected: example });
+    }
+
     a11yProps(index: number) {
         return {
             id: `simple-tab-${index}`,
@@ -389,6 +398,7 @@ export default class InterpretePage extends React.Component<IProps, IState> {
                                     label="Syntax Tree"
                                     {...this.a11yProps(1)}
                                 />
+                                <Tab label="Examples" {...this.a11yProps(2)} />
                             </Tabs>
                         </Box>
                         <TabPanel
@@ -432,6 +442,23 @@ export default class InterpretePage extends React.Component<IProps, IState> {
                             }}>
                             <SyntaxTree tree={this.state.syntaxTree} />
                         </TabPanel>
+
+                        <TabPanel
+                            value={this.state.tabSelected}
+                            index={2}
+                            style={{
+                                padding: '8px 0',
+                                width: '100%',
+                                height: '80vh',
+                            }}>
+                            <InterpreteExamples
+                                exampleSelected={
+                                    this.state?.exampleSelected?.name
+                                }
+                                onChangeSelected={this.handleExampleChange}
+                            />
+                        </TabPanel>
+
                         <Button
                             disabled={this.state.running}
                             onClick={() => this.run()}

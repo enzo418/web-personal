@@ -1,6 +1,13 @@
-export const examples = [
+export interface Example {
+    name: string;
+    type: 'program' | 'error';
+    code: string;
+}
+
+const examples: Example[] = [
     {
         name: 'calculate the n-th number of the fibonnacci sequence',
+        type: 'program',
         code: `var n, actual, ant1, ant2, i
         {
             n = 1200
@@ -25,6 +32,7 @@ export const examples = [
     },
     {
         name: 'Calculate the least common multiple between two numbers',
+        type: 'program',
         code: `var n1, n2, ultimoDividendo, aux, resto, mcd, mcm
         {
             leer("Ingrese el primer numero: ", n1)
@@ -51,6 +59,7 @@ export const examples = [
     },
     {
         name: 'fizz-buzz',
+        type: 'program',
         code: `var n, i
         {
             leer("Hasta que n?: ", n)
@@ -75,4 +84,34 @@ export const examples = [
             }
         }`,
     },
+    {
+        name: 'undefined variable',
+        type: 'error',
+        code: `var i
+        {
+            i = 1
+            
+            mientras(i < n) {
+                escribir("...", i)
+            }
+        }`,
+    },
+    {
+        name: 'unexpected token',
+        type: 'error',
+        code: `var i
+        {
+            i # 1
+        }`,
+    },
+    {
+        name: 'unexpected token',
+        type: 'error',
+        code: `var i
+        {
+            i # 1
+        }`,
+    },
 ];
+
+export default examples;

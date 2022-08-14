@@ -13,6 +13,12 @@
     width: 454px;
 }
 
+.output-container {
+    overflow-y: scroll;
+    overflow-x: clip;
+    overflow-wrap: anywhere;
+}
+
 .shell-input-container {
     display: flex;
     flex-direction: row;
@@ -31,7 +37,8 @@
     font-size: 1em;
     line-height: 1.2;
     font-family: monospace;
-    white-space: nowrap;
+    /* white-space: nowrap; */
+    white-space: pre-wrap;
 }
 
 .exec-error {
