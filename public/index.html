@@ -17,6 +17,14 @@
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
     <script src="bundle.js"></script>
+
+    <script>
+      var Module = {
+        preInit: function () {
+          Module.noInitialRun = true;
+        }
+      }
+    </script>
     <script async type="text/javascript" src="Interprete.js"></script>
   </body>
 </html>

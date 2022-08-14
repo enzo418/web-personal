@@ -24,40 +24,65 @@ interface Shell {
 }
 
 class ShellElement implements Shell {
-    element: HTMLTextAreaElement;
+    element: HTMLDivElement;
     promiseEnter: { resolve: any } = {
         resolve: undefined,
     };
+    outputElement: HTMLDivElement;
+    inputContainerElement: HTMLDivElement;
+    inputElement: HTMLDivElement;
 
-    constructor(element: HTMLTextAreaElement) {
+    constructor(element: HTMLDivElement) {
         this.element = element;
+        this.outputElement = element.querySelector('.output');
+        this.inputContainerElement = element.querySelector(
+            '.shell-input-container',
+        );
+        this.inputElement =
+            this.inputContainerElement.querySelector('.shell-input');
 
         this.element.addEventListener('keydown', event => {
             if (event.key === 'Enter' && this.promiseEnter.resolve) {
                 this.promiseEnter.resolve();
             }
         });
+
+        this.element.addEventListener('click', () => {
+            if (!this.inputContainerElement.classList.contains('hidden')) {
+                this.inputElement.focus();
+            }
+        });
     }
 
-    write(message = '', termination = '\n') {
-        this.element.innerText += message + termination;
-        this.element.scrollTop = this.element.scrollHeight; // focus on bottom
+    write(message = '', termination = '') {
+        this.outputElement.innerHTML += (
+            message.replaceAll(' ', '&nbsp;') + termination
+        ).replaceAll('\n', '<br>');
+        this.outputElement.scrollTop = this.element.scrollHeight; // focus on bottom
     }
 
     // returns the readed value
     async readValue() {
-        var length_before = this.getFlatOutput().length;
+        this.inputElement.innerText = '';
+        this.inputContainerElement.classList.remove('hidden');
+        this.inputElement.style.minWidth =
+            this.element.getBoundingClientRect().width + 'px';
 
-        this.element.setAttribute('contentEditable', 'true');
-        this.element.focus();
+        this.inputElement.focus();
 
         await this.__OnEnterPressed();
 
-        this.element.removeAttribute('contentEditable');
+        var value = this.inputElement.innerText;
 
-        var flat_output = this.getFlatOutput();
-        var length_after = flat_output.length;
-        var value = flat_output.substring(length_before, length_after);
+        this.inputContainerElement.classList.add('hidden');
+
+        this.outputElement.innerText =
+            this.outputElement.innerText.substring(
+                0,
+                this.outputElement.innerText.length - 1,
+            ) +
+            value +
+            '\n';
 
         this.write();
 
@@ -65,16 +90,18 @@ class ShellElement implements Shell {
     }
 
     writeProgramFinished(code: number) {
-        this.element.innerText += '\n\n';
-        this.element.innerHTML += `<span class="program-finished">Executed with code ${code}</span>`;
+        this.outputElement.innerText += '\n\n';
+        this.outputElement.innerHTML += `<span class="program-finished ${
+            code > 0 ? 'exec-error' : ''
+        }">Executed with code ${code}</span>`;
     }
 
     clear() {
-        this.element.innerHTML = '';
+        this.outputElement.innerHTML = '';
     }
 
     getFlatOutput() {
-        return this.element.innerText.replaceAll(/\n|\t|\s/g, '');
+        return this.outputElement.innerText.replaceAll(/\n|\t|\s/g, '');
     }
 
     // # -> itsn't supported
@@ -106,7 +133,7 @@ class Interprete {
     }
 
     async writeMessageReadValue(message: string) {
-        this.shell.write(message, '');
+        this.shell.write(message, '\n');
         return new Promise(async (resolve, rej) => {
             var value = await this.shell.readValue();
             setTimeout(async () => {
@@ -167,6 +194,7 @@ interface IProps {}
 interface IState {
     syntaxTree: string;
     tabSelected: number;
+    running: boolean;
 }
 
 const darkTheme = createTheme({
@@ -179,6 +207,7 @@ export default class InterpretePage extends React.Component<IProps, IState> {
     state = {
         syntaxTree: '',
         tabSelected: 0,
+        running: false,
     };
 
     inputSourceElement: any;
@@ -240,7 +269,7 @@ export default class InterpretePage extends React.Component<IProps, IState> {
 
         if (!this.codeEditor) {
             var editor = monaco.editor.create(this.inputSourceElement.current, {
-                value: 'var n {\n  n = 418 / 2\n  escribir("Hola!: ", n * 2)\n}',
+                value: 'var n, i {\n  n = 418 / 2\n  i = 3\n  mientras(i > 0) {\n    escribir("Hola!: ", n * 2)\n    i = i - 1\n  }\n  leer("H: ", n)\n}',
                 language: 'factorial',
                 minimap: {
                     enabled: false,
@@ -271,23 +300,44 @@ export default class InterpretePage extends React.Component<IProps, IState> {
 
     onExit(code: number) {
         globalThis.interprete.shell.writeProgramFinished(code);
+        this.setState({ running: false });
     }
 
     run() {
+        this.setState({ running: true });
+
+        monaco.editor.removeAllMarkers('owner');
         globalThis.interprete.shell.clear();
 
         globalThis.Module.onExit = this.onExit.bind(this);
-        var exec = globalThis.Module.Interprete.Interpretar(
-            this.codeEditor.getValue(),
-        );
+
+        var exec;
+        var error;
+
+        try {
+            exec = globalThis.Module.Interprete.Interpretar(
+                this.codeEditor.getValue(),
+            );
+        } catch (e) {
+            error = e;
+        }
+
         console.log({ exec });
-        if (exec) {
+        if (
+            typeof exec === 'object' &&
+            typeof exec.then === 'function' && // is promise?
+            !error
+        ) {
             exec.then(() => this.onExit(0)).catch(
                 (exit: { message: string; name: string; status: number }) =>
-                    this.onExit(exit.status),
+                    this.onExit(exit.status || 1),
             );
+        } else if (error) {
+            this.onExit(1);
+        } else {
+            // if exec == undefined it stoped, executed it and returned wathever we returned from c++
+            this.onExit(0);
         }
-        monaco.editor.removeAllMarkers('owner');
     }
 
     handleTabChange(event: React.SyntheticEvent, newValue: number) {
@@ -352,14 +402,24 @@ export default class InterpretePage extends React.Component<IProps, IState> {
                                 lineHeight: '22px',
                             }}>
                             <div
-                                className="black-background"
+                                className="black-background output-container"
                                 style={{
                                     width: '98%',
                                     height: '98%',
                                     padding: '8px',
                                 }}
                                 contentEditable={false}
-                                ref={this.outputElement}></div>
+                                ref={this.outputElement}>
+                                <div className="output"></div>
+                                <div className="shell-input-container hidden">
+                                    <span className="shell-input-prefix">
+                                        &gt;&nbsp;
+                                    </span>
+                                    <div
+                                        className="shell-input"
+                                        contentEditable={true}></div>
+                                </div>
+                            </div>
                         </TabPanel>
 
                         <TabPanel
@@ -373,6 +433,7 @@ export default class InterpretePage extends React.Component<IProps, IState> {
                             <SyntaxTree tree={this.state.syntaxTree} />
                         </TabPanel>
                         <Button
+                            disabled={this.state.running}
                             onClick={() => this.run()}
                             endIcon={<SendIcon />}>
                             Run

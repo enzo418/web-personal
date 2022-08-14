@@ -6,3 +6,38 @@
 .program-finished {
     color: #04810feb;
 }
+
+#shell-input {
+    display: block;
+    height: 16px;
+    width: 454px;
+}
+
+.shell-input-container {
+    display: flex;
+    flex-direction: row;
+}
+
+.shell-input {
+    display: inline-block;
+    
+}
+
+.shell-input:focus {
+    outline: none;
+}
+
+.output {
+    font-size: 1em;
+    line-height: 1.2;
+    font-family: monospace;
+    white-space: nowrap;
+}
+
+.exec-error {
+    color: red;
+}
+
+.hidden {
+    display: none;
+}
