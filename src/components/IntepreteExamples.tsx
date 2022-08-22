@@ -1,10 +1,11 @@
 import React from 'react';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
-import { Box, ListSubheader, MenuItem } from '@mui/material';
+import { Box, ListSubheader, MenuItem, Typography } from '@mui/material';
 import examples, { Example } from '../data/InterpreteExamples';
+import '../styles/InterpreteExamples.css';
 
 interface IProps {
-    exampleSelected?: string;
+    exampleSelected?: Example;
     onChangeSelected: (ex: Example) => any;
 }
 
@@ -40,14 +41,24 @@ export default function InterpreteExamples(props: IProps) {
     return (
         <Box>
             <Select
-                value={props.exampleSelected || ''}
-                label="Example"
-                onChange={handleChange}>
-                <MenuItem value="">
-                    <em>None</em>
-                </MenuItem>
+                value={props.exampleSelected?.name || ''}
+                label="Examples"
+                onChange={handleChange}
+                style={{ width: '100%' }}>
+                <MenuItem value="">None</MenuItem>
                 {...elements}
             </Select>
+            {props.exampleSelected && (
+                <>
+                    <Typography
+                        className="underline"
+                        variant="h4"
+                        sx={{ margin: '16px 0 8px 0;' }}>
+                        Description:
+                    </Typography>
+                    <Typography>{props.exampleSelected.description}</Typography>
+                </>
+            )}
         </Box>
     );
 }

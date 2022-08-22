@@ -5,6 +5,7 @@ import { DataSet } from 'vis-data/peer';
 import { Network } from 'vis-network/peer';
 import 'vis-network/styles/vis-network.css';
 import { DataSetInitialOptions } from 'vis-data/declarations/data-set';
+import { Typography } from '@mui/material';
 
 interface IProps {
     tree: string;
@@ -32,12 +33,8 @@ export default function SyntaxTree(props: IProps) {
         },
     };
 
-    console.log(props);
-
     useEffect(() => {
         var [pEdges, pNodes] = getEdgesNodesFromSyntaxTree(props.tree);
-
-        console.log({ pEdges, pNodes });
 
         if (!hasData) {
             hasData = true;
@@ -62,5 +59,12 @@ export default function SyntaxTree(props: IProps) {
         }
     }, [props.tree]);
 
-    return <div ref={container} style={{ height: '100%', width: '100%' }} />;
+    return (
+        <>
+            {props.tree.length === 0 && (
+                <Typography>To generate the syntax tree hit run</Typography>
+            )}
+            <div ref={container} style={{ height: '100%', width: '100%' }} />
+        </>
+    );
 }

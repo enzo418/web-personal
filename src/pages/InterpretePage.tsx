@@ -7,6 +7,7 @@ import {
     Tab,
     Tabs,
     ThemeProvider,
+    Tooltip,
 } from '@mui/material';
 import React from 'react';
 import * as monaco from 'monaco-editor';
@@ -16,6 +17,7 @@ import SyntaxTree from '../components/SyntaxTree';
 import TabPanel from '../components/TabPanel';
 import InterpreteExamples from '../components/IntepreteExamples';
 import { Example } from '../data/InterpreteExamples';
+import InterpreteGrammar from '../components/InterpreteGrammar';
 
 interface Shell {
     // eslint-disable-next-line no-unused-vars
@@ -165,7 +167,7 @@ class Interprete {
             message,
         };
 
-        console.log({ error });
+        console.error({ error });
 
         this.errorCallbacks.forEach(cb => {
             cb(error);
@@ -327,7 +329,6 @@ export default class InterpretePage extends React.Component<IProps, IState> {
             error = e;
         }
 
-        console.log({ exec });
         if (
             typeof exec === 'object' &&
             typeof exec.then === 'function' && // is promise?
@@ -351,6 +352,7 @@ export default class InterpretePage extends React.Component<IProps, IState> {
 
     handleExampleChange(example: Example) {
         this.setState({ exampleSelected: example });
+        this.codeEditor.getModel().setValue(example.code);
     }
 
     a11yProps(index: number) {
@@ -399,6 +401,7 @@ export default class InterpretePage extends React.Component<IProps, IState> {
                                     {...this.a11yProps(1)}
                                 />
                                 <Tab label="Examples" {...this.a11yProps(2)} />
+                                <Tab label="Grammar" {...this.a11yProps(3)} />
                             </Tabs>
                         </Box>
                         <TabPanel
@@ -452,11 +455,20 @@ export default class InterpretePage extends React.Component<IProps, IState> {
                                 height: '80vh',
                             }}>
                             <InterpreteExamples
-                                exampleSelected={
-                                    this.state?.exampleSelected?.name
-                                }
+                                exampleSelected={this.state?.exampleSelected}
                                 onChangeSelected={this.handleExampleChange}
                             />
+                        </TabPanel>
+
+                        <TabPanel
+                            value={this.state.tabSelected}
+                            index={3}
+                            style={{
+                                padding: '8px 0',
+                                width: '100%',
+                                height: '80vh',
+                            }}>
+                            <InterpreteGrammar />
                         </TabPanel>
 
                         <Button

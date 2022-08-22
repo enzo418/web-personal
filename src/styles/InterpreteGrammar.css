@@ -1,0 +1,32 @@
+.rule {
+    display:flex;
+}
+
+.rule-symbol {
+    border: 1px solid #ffffff29;
+    width: 10vw;
+    text-align: center;
+
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+}
+
+.rules {
+    overflow-y: scroll;
+    height: 85%;
+}
+
+.rule-productions {
+    padding: 8px;
+}
+
+.rule-production {
+    border-bottom: 1px solid #7d808245;
+    padding: 5px 0;
+}
+
+.rule-production:last-child {
+    border: 0;
+}
