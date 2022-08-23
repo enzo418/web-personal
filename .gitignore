@@ -17,6 +17,8 @@
 !*.ico
 !.json
 !.gitignore
+!*.scss
+!*.sass
 
 !public/*.wasm
 
